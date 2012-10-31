@@ -1,0 +1,35 @@
+<atlassian-plugin key="${project.groupId}.${project.artifactId}" name="${project.name}" plugins-version="2">
+    <plugin-info>
+        <description>${project.description}</description>
+        <version>${project.version}</version>
+        <vendor name="${project.organization.name}" url="${project.organization.url}" />
+    </plugin-info>
+    <component key="taskobug-manager" name="taskobug manager (Team workload info)"
+               class="ru.megaplan.jira.plugins.taskobug.TaskobugManagerImpl"/>
+    <component key="bugobug-manager" name="bugobug manager (Release bugs statistics)"
+               class="ru.megaplan.jira.plugins.taskobug.BugobugManagerImpl"/>
+    <webwork1 key="TaskobugTestAction" name="TaskobugTestAction">
+        <actions>
+            <action name="ru.megaplan.jira.plugins.taskobug.action.TaskobugTestAction"
+                    alias="TaskobugTestAction">
+                <view name="success">/testTemplate.vm</view>
+                <view name="error">/testTemplate.vm</view>
+                <view name="input">/testTemplate.vm</view>
+            </action>
+        </actions>
+    </webwork1>
+    <gadget key="taskobuggadget" name="Team workload info" location="gadget/taskobugGadget.xml">
+        <param name="roles-required">browse</param>
+      <!--  <resource type="download" name="mpsrate-screenshot.png" location="images/mpsrate-screenshot.png"/>
+        <resource type="download" name="mpsrate-thumb.png" location="images/mpsrate-thumb.png"/> -->
+    </gadget>
+    <gadget key="bugobuggadget" name="Release bugs statistics" location="gadget/releaseBugGadget.xml">
+        <param name="roles-required">browse</param>
+        <!--  <resource type="download" name="mpsrate-screenshot.png" location="images/mpsrate-screenshot.png"/>
+    <resource type="download" name="mpsrate-thumb.png" location="images/mpsrate-thumb.png"/> -->
+    </gadget>
+
+    <rest key="gadgetRESTpoints" path="/taskobug" version="1.0" description="Provides REST endpoints used to display gadget contents.">
+        <package>ru.megaplan.jira.plugins.taskobug.resource</package>
+    </rest>
+</atlassian-plugin>

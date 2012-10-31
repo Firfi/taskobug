@@ -1,0 +1,198 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<Module>
+    <ModulePrefs title="Team workload info" directory_title="Team workload info" description="Team workload info"
+                 author="Megaplan" author_affiliation="Megaplan"
+                 author_location="Moscow, Erefia" height="100">
+        <Optional feature="gadget-directory">
+            <Param name="categories">
+                JIRA
+            </Param>
+        </Optional>
+        <Require feature="setprefs" />
+        <Require feature="views" />
+        <Optional feature="atlassian.util" />
+        <Optional feature='auth-refresh' />
+        <Require feature="settitle"/>
+        <Require feature="oauthpopup" />
+        <Require feature="dynamic-height"/>
+        #oauth
+        #supportedLocales("gadget.common,gadget.stats")
+    </ModulePrefs>
+    <UserPref name="isConfigured" datatype="hidden" default_value="false" />
+    <UserPref name="usersAndPercents" datatype="hidden" default_value="admin:50"/>
+    <UserPref name="daysBefore" datatype="hidden" default_value=""/>
+    <UserPref name="refresh" datatype="hidden" default_value="false" />
+    <Content type="html" view="profile,canvas,home">
+        <![CDATA[
+        #requireResource("com.atlassian.jira.gadgets:autocomplete")
+        #includeResources()
+        <div id="template" style="display:none">
+
+        </div>
+        <script type="text/javascript">
+        (function ()
+        {
+            var gadget = AJS.Gadget({
+                baseUrl: "__ATLASSIAN_BASE_URL__",
+                useOauth: "/rest/gadget/1.0/currentUser",
+                config: {
+                    descriptor: function (args)
+                    {
+
+                        var gadget = this;
+
+                        return  {
+                            action: "/rest/taskobug/latest/gadget/validate",
+                            theme : function ()
+                            {
+                                if (gadgets.window.getViewportDimensions().width < 450){
+                                        return "gdt top-label";
+                                    }
+                                    else
+                                    {
+                                        return "gdt";
+                                    }
+                            }(),
+
+                            fields: [
+                                AJS.gadget.fields.days(gadget, "daysBefore"),
+                                {
+                                    id: "usersAndPercents",
+                                    userpref: "usersAndPercents",
+                                    class: "textBox",
+                                    label: "Users And Percents",
+                                    description: "login1:50,login2,login3:30",
+                                    type: "textarea",
+                                    value: gadget.getPref("usersAndPercents")
+                                },
+                                AJS.gadget.fields.nowConfigured()
+                            ]
+                        };
+                    },
+                    args: function() {
+                        return [
+                            {"ks": "ajax query here"}
+                        ];
+                    }()
+                },
+                view: {
+                    enableReload: true,
+                    onResizeReload: true,
+                    template: function (args)
+                    {
+                        var gadget = this;
+                        console.warn(args);
+                        jQuery("#template").empty();
+                        var mainData = args.data[0];
+                        var headerData = args.data[1];
+                        var mainTable = AJS.gadgets.templater.Table({
+                            descriptor: function (args) {
+                                return {
+                                    cols: function() {
+                                        var cls = [];
+                                        cls.push({header: "День:"});
+                                        cls.push({header: "Тип"});
+                                        for (var login in headerData) {
+                                            cls.push({header: headerData[login]});
+                                        }
+                                        return cls;
+                                    }(),
+                                    data: function () {
+                                        var rows = [];
+                                        var fullSum = 0;
+                                        for (var day in mainData) {
+
+                                            var firstDay = true;
+                                            var detailsData = mainData[day][0];
+                                            var summaryData = mainData[day][1];
+                                            for (var type in detailsData) {
+                                                var firstType = true;
+                                                var row = [];
+                                                if (firstDay) {
+                                                    row.push({label: day});
+                                                    firstDay = false;
+                                                } else {
+                                                    row.push({label: ""});
+                                                }
+                                                if (firstType) {
+                                                    row.push({label: type});
+                                                    firstType = false;
+                                                } else {
+                                                    row.push({label: ""});
+                                                }
+                                                var detailsDataByType = detailsData[type];
+                                                for (var user in detailsDataByType) {
+                                                    var template = detailsDataByType[user][1]==true?'<p style="color: red;">{text}</p>':'{text}';
+                                                    var text = AJS.template(template).fill({text: detailsDataByType[user][0]});
+                                                    row.push({label: text});
+                                                }
+                                                rows.push(row);
+                                            }
+                                            var sumrow = [];
+                                            sumrow.push({label: "<b>Итого</b>"});
+                                            sumrow.push({label: ""});
+                                            for (var usor in summaryData) {
+                                                var template = summaryData[usor][1]==true?'<p style="color: red;">{text}</p>':'{text}';
+                                                var text = AJS.template(template).fill({text: summaryData[usor][0]});
+                                                sumrow.push({label: "<b>"+text+"</b>"});
+                                            }
+                                            console.warn(sumrow);
+                                            rows.push(sumrow);
+                                            var empty = [];
+                                            var emptyLabel = {label:""}
+                                            empty.push(emptyLabel, emptyLabel);
+                                            for (var usor in summaryData) {
+                                                empty.push(emptyLabel);
+                                            }
+                                            rows.push(empty);
+                                        }
+                                        return rows;
+                                    }()
+                                };
+                            },
+                            sortable: false
+                        });
+                        mainTable.addCallback(function (fragment) {
+                            var t = jQuery("#template");
+                            t.append(fragment);
+                            t.show();
+                            jQuery(fragment).find('td').find('p').each(function () {
+                                var that = jQuery(this)
+                                var col = (that.css('color'));
+                                if (col) {
+                                    var par = that.closest('td');
+                                    if (par) {
+                                        par.css('background-color', col);
+                                        that.css('color', 'black')
+                                    }
+                                }
+                            });
+
+                        });
+                        mainTable.build();
+                        gadget.hideLoading();
+                        gadget.resize();
+
+                    },
+                    args: [{
+                        key: "data",
+                        ajaxOptions: function () {
+                            return {
+                                url: "/rest/taskobug/latest/gadget/generate",
+                                data:  {
+                                    usersAndPercents : gadgets.util.unescapeString(this.getPref("usersAndPercents")),
+                                    daysBefore : gadgets.util.unescapeString(this.getPref("daysBefore")),
+                                }
+                            };
+                        }
+                    }]
+                }
+            });
+        })();
+        </script>
+
+
+        ]]>
+    </Content>
+</Module>

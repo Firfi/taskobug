@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<Module>
+    <ModulePrefs title="Release bugs statistics" directory_title="Release bugs statistics" description="Release bugs statistics"
+                 author="Megaplan" author_affiliation="Megaplan"
+                 author_location="Moscow, Erefia" height="100">
+        <Optional feature="gadget-directory">
+            <Param name="categories">
+                JIRA
+            </Param>
+        </Optional>
+        <Require feature="setprefs" />
+        <Require feature="views" />
+        <Optional feature="atlassian.util" />
+        <Optional feature='auth-refresh' />
+        <Require feature="settitle"/>
+        <Require feature="oauthpopup" />
+        <Require feature="dynamic-height"/>
+        #oauth
+        #supportedLocales("gadget.common,gadget.stats")
+    </ModulePrefs>
+    <UserPref name="isConfigured" datatype="hidden" default_value="false" />
+    <UserPref name="releasePattern" datatype="hidden" default_value="r1299p*"/>
+    <UserPref name="refresh" datatype="hidden" default_value="false" />
+    <Content type="html" view="profile,canvas,home">
+        <![CDATA[
+        #requireResource("com.atlassian.jira.gadgets:autocomplete")
+        #includeResources()
+        <div id="template" style="display:none">
+
+        </div>
+        <script type="text/javascript">
+        (function ()
+        {
+            var gadget = AJS.Gadget({
+                baseUrl: "__ATLASSIAN_BASE_URL__",
+                useOauth: "/rest/gadget/1.0/currentUser",
+                config: {
+                    descriptor: function (args)
+                    {
+
+                        var gadget = this;
+
+                        return  {
+                            action: "/rest/taskobug/latest/bugobug/validate",
+                            theme : function ()
+                            {
+                                if (gadgets.window.getViewportDimensions().width < 450){
+                                        return "gdt top-label";
+                                    }
+                                    else
+                                    {
+                                        return "gdt";
+                                    }
+                            }(),
+
+                            fields: [
+                                {
+                                    id: "releasePattern",
+                                    userpref: "releasePattern",
+                                    class: "textBox",
+                                    label: "Release pattern",
+                                    description: "r1299p*",
+                                    type: "textarea",
+                                    value: gadget.getPref("releasePattern")
+                                },
+                                AJS.gadget.fields.nowConfigured()
+                            ]
+                        };
+                    },
+                    args: function() {
+                        return [
+                            {"ks": "ajax query here"}
+                        ];
+                    }()
+                },
+                view: {
+                    enableReload: true,
+                    onResizeReload: true,
+                    template: function (args)
+                    {
+                        var gadget = this;
+                        gadgets.window.setTitle("Статистика по незакрытым багам : " + this.getPref("releasePattern"));
+                        jQuery("#template").empty();
+                        var mainData = args.data;
+                         var mainTable = AJS.gadgets.templater.Table({
+                            descriptor: function (args) {
+                                return {
+                                    cols: function() {
+                                        var cls = [];
+                                        cls.push({header: "Команда:"});
+                                        cls.push({header: "Незакрыто багов"});
+                                        cls.push({header: "Исправлено багов"});
+                                        cls.push({header: "Исправлено, в %"});
+                                        cls.push({header: "Затрачено"});
+                                        return cls;
+                                    }(),
+                                    data: function () {
+                                        var rows = [];
+                                        var fullSum = 0;
+                                        var detailsData = mainData[0]
+                                        var sumData = mainData[1]
+                                        function percentTemplate(){return AJS.template('<p style="color: {color};">{text}%</p>')};
+                                        for (var team in detailsData) {
+                                            var row = [];
+                                            var teamData = detailsData[team];
+                                            var closed = teamData[0];
+                                            var open = teamData[1];
+                                            var percents = teamData[2][0];
+                                            var percentsColor = teamData[2][1];
+                                            var spent = teamData[3];
+                                            row.push({label: team});
+                                            row.push({label: closed});
+                                            row.push({label: open});
+                                            row.push({label: percentTemplate().fill({text: percents, color: percentsColor})});
+                                            row.push({label: spent});
+                                            rows.push(row);
+                                        }
+                                        var sumRow = [
+                                            {label:"<b>Итого по релизу</b>"},
+                                            {label: "<b>"+sumData[0]+"</b>"},
+                                            {label: "<b>"+sumData[1]+"</b>"},
+                                            {label: "<b>"+percentTemplate().fill({text: sumData[2][0], color: sumData[2][1]})+"</b>"},
+                                            {label: "<b>"+sumData[3]+"</b>"}
+                                        ]
+                                        rows.push(sumRow);
+                                        return rows;
+                                    }()
+                                };
+                            },
+                            sortable: false
+                        });
+                        mainTable.addCallback(function (fragment) {
+                            var t = jQuery("#template");
+                            t.append(fragment);
+                            jQuery(fragment).find('td').find('p').each(function () {
+                                var that = jQuery(this)
+                                var col = (that.css('color'));
+                                if (col && col != 'black' && col != 'rgb(0, 0, 0)' && col != 'rgb(68, 68, 68)') { // dunno why
+                                    console.warn(col);
+                                    var par = that.closest('td');
+                                    if (par) {
+                                        par.css('background-color', col);
+                                        that.css('color', 'black')
+                                    }
+                                }
+                            });
+                            t.show();
+
+                        });
+                        mainTable.build();
+                        gadget.hideLoading();
+                        gadget.resize();
+
+                    },
+                    args: [{
+                        key: "data",
+                        ajaxOptions: function () {
+                            return {
+                                url: "/rest/taskobug/latest/bugobug/generate",
+                                data:  {
+                                    releasePattern : gadgets.util.unescapeString(this.getPref("releasePattern")),
+                                }
+                            };
+                        }
+                    }]
+                }
+            });
+        })();
+        </script>
+
+
+        ]]>
+    </Content>
+</Module>
