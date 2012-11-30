@@ -104,8 +104,8 @@
                                         for (var team in detailsData) {
                                             var row = [];
                                             var teamData = detailsData[team];
-                                            var closed = teamData[0];
-                                            var open = teamData[1];
+                                            var open = teamData[0];
+                                            var closed = teamData[1];
                                             var percents = teamData[2][0];
                                             var percentsColor = teamData[2][1];
                                             var spent = teamData[3];
@@ -118,8 +118,8 @@
                                         }
                                         var sumRow = [
                                             {label:"<b>Итого по релизу</b>"},
-                                            {label: "<b>"+sumData[0]+"</b>"},
                                             {label: "<b>"+sumData[1]+"</b>"},
+                                            {label: "<b>"+sumData[0]+"</b>"},
                                             {label: "<b>"+percentTemplate().fill({text: sumData[2][0], color: sumData[2][1]})+"</b>"},
                                             {label: "<b>"+sumData[3]+"</b>"}
                                         ]

@@ -73,7 +73,7 @@ class BugobugManagerImpl(searchService: SearchService,
     def countPercents(c: Long, o: Long): Int = {
       val sum: Float = c + o
       if (sum == 0) 0
-      else (o.toFloat/(sum/100)).toInt
+      else (c.toFloat/(sum/100)).toInt
     }
     if (releaseCf == null) {
       log.error("can't find customfield with name : " + releaseCfName)
@@ -85,7 +85,7 @@ class BugobugManagerImpl(searchService: SearchService,
       val initiator = jiraAuthenticationContext.getLoggedInUser
       val builder = JqlQueryBuilder.newBuilder()
       val allQuery = builder.where().
-        project(projectKey).and().customField(releaseCf.getIdAsLong).like(releasePattern).
+        project(projectKey).and().issueType("Bug").and().customField(releaseCf.getIdAsLong).like(releasePattern).
         buildQuery()
       val issues = searchService.search(initiator, allQuery, PagerFilter.getUnlimitedFilter).getIssues
       val details = issues.groupBy {

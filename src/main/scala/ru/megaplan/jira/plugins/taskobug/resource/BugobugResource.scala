@@ -20,7 +20,6 @@ import java.io.StringWriter
 @Path ("/bugobug")
 @Produces(Array(MediaType.APPLICATION_JSON))
 class BugobugResource(bugobugManager: BugobugManager) extends LogHelper {
-
   @GET
   @Path("/generate")
   def generate(@Context request: HttpServletRequest, @QueryParam ("releasePattern") releasePattern: String) = {
@@ -31,11 +30,9 @@ class BugobugResource(bugobugManager: BugobugManager) extends LogHelper {
     mapper.writeValue(sw, body)
     Response.ok(sw.toString).build
   }
-
   @GET
   @Path("/validate")
   def validate(@QueryParam ("releasePattern") releasePattern: String): Response = {
     Response.ok.build
   }
-
 }
